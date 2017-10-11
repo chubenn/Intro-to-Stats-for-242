@@ -1,0 +1,157 @@
+---
+title: "Multiple Regression"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#### Between groups {#anchor}  
+**Application** : Identifying how multiple predictors contribute to linear equation relating the predictors to criterion.  
+**Research Hypothesis** : The researcher hypothesized that students own pets may agree more with the statement that Ben should get a haircut. 
+
+**First load packages and library**  
+> point and click on the folder under the Environment Tab
+```{r echo = FALSE}
+class <- read.csv("C:/Users/Branly Mclanbry/Dropbox/Psych 242 ADD Health Codebook/Fall 2017/R/example.csv",  na.strings="999")
+```
+**Install packages if you have not installed them**
+```{r eval = FALSE}
+install.packages(c("tidyverse", "lsr", "multcomp","corrplot","lm.beta","rockchalk","Hmisc"))
+```
+**Load them**
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lsr)
+library(multcomp)
+library(corrplot)
+library(lm.beta)
+library(rockchalk)
+library(Hmisc)
+```
+
+**Cleaning**  
+Data has to be cleaned before analyzing. this is done with the `na.omit` function. Basically this deletes any entries that have missing values. The reason why we do this is because analysis will return errors.  
+The cleaned data is stored seperated into a new `data.frame` called `class.clean`
+```{r}
+class.clean <-(na.omit(class))
+```
+**Creating correlational matrix**  
+A correlation matrix is usually the first step because it provides information for what things are correlated with other things. `cor` function stands for correlation and we will recode the correlations into a list called `class.cor`.  
+```{r}
+class.cor <- cor(class.clean)
+```
+**Creating the matrix**  
+We can now push the correlational matrix into a plot using the `corrplot` function from `corrplot` package. There are many ways and methods to predict correlational matrix: including `circles`,`square`, and `number`. We will be using `number`. The `number.cex` arguement allows for the adjusting of font size.  
+**Correlation matrix for `class`**
+```{r}
+corrplot(class.cor, method = "number", number.cex = .65)
+```
+Alternatively, `rcorr` function from package `Hmisc` can provide correlational matrixes and P values.
+```{r}
+rcorr(as.matrix(class.cor))
+```
+**Correlation Tests**  
+That is alot information, quite frankly, we can see that there is a significant correlation between haircuts and pets owned.  
+A correlationed test `cor.test` can quickly provide information that is more useful than just looking at a matrix.
+```{r}
+cor.test(class.clean$haircut,class.clean$other)
+```
+**Linear Regression**  
+Now we want to look at the regression analysis. we are going to store the information into `lin.dat` while using the `lm` function.
+```{r}
+lin.dat <- lm(haircut~other, dat = class.clean)
+```
+**Summary**  
+Now that we have the model created, we need to wrap it with `summary` to derive information from it.
+```{r}
+summary(lin.dat)
+```
+**Partial Correlation Coefficient**  
+Using the `getPartialCor` function from the `rockchalk` package we can find the correlation coefficients.
+```{r}
+getPartialCor(lin.dat)
+```
+**Multple Regression**  
+What if we want to look at the multiple regression analysis with more than one variable? Let's say we want to use `other` which is other pets with `dognum` which is the number of dogs. We are going to store the information into `mult.dat` while using the `lm` function.
+```{r}
+mult.dat <- lm(haircut ~ other + dognum, dat =class.clean)
+```
+**Summary**  
+Now that we have the model created, we need to wrap it with `summary` to derive information from it.
+```{r}
+summary(mult.dat)
+```
+Pretty cool! Now let's talk about the weight of the predictor value. Weights or *b* gives us information for the direction and extent of change derived from each 1 unit change while holding all the other predictors constant.  
+The *b* for `dognum` and `other` tells us that agreeableness for "ben should get a haircut" increases by .07 for every dog/other pet you have. Furthermore, the *p*-value tells us that this is a significant change and has value when predicting the haircut/dog ratio.  
+The intercept tells us how agreeableness when both predictors is held at zero. Which makes sense, because 2.5 is neutral for agreeableness. What this data tells us is that, as you own more dogs or other pets, you agree with the statement that Ben should get a haircut. 
+
+
+
+
+**Information for write up**  
+We will need some more information for the write up.
+**Means and Standard Deviation**  
+The command requests that the `sd` or `mean` function be applied to `class$other` and `class$dognum`.
+```{r}
+mean(class.clean$other)
+mean(class.clean$dognum)
+sd(class.clean$other)
+sd(class.clean$dognum)
+```
+**Sample size**   
+Then we will need to know the sample size per group. This will be accomplished with the `table` function.  
+Factor levels for `haircut` because '1' haircut does not make sense. Recode variables into a new variable instead of overwriting the original codes.
+Now codes like '1' are disagree while '5' is agree.
+```{r}
+class.clean$haircut2[class.clean$haircut==1] <- "Disagree"
+class.clean$haircut2[class.clean$haircut==2] <- "Disagree"
+class.clean$haircut2[class.clean$haircut==3] <- "Neutral"
+class.clean$haircut2[class.clean$haircut==4] <- "Agree"
+class.clean$haircut2[class.clean$haircut==5] <- "Agree"
+```
+Now we see that there is good amount of people who aree or disagree...maybe even neutral
+```{r}
+table(class.clean$haircut2)
+```
+**Effect size**   
+Effect sizes can be found from the `lsr` package utilizing the `etaSquared` function.
+```{r}
+etaSquared(mult.dat)
+```
+**Partial Correlation Coefficient**  
+Using the `getPartialCor` function from the `rockchalk` package we can find the correlation coefficients.
+```{r}
+getPartialCor(mult.dat)
+```
+**Beta Weights**  
+Finding the beta weights for information is important. We can use the `lm.beta` function from `lm.beta` package.
+```{r}
+lm.beta(mult.dat)
+```
+**Write up**  
+There is a difference between flavor preference and reported exercise hours, *F*(2,38) = 3.73, *p* < .05, partial n^2^ = .16. salty (*M* = 18.00, *SD* = 16.10) excercised more than their Sweet (*M* = 7.28, *SD* = 5.33), *p* < .05 and savory (*M* = 7.37, *SD* = 6.82), *p* < .05 counterparts. No differences were found between the sweet and savory parts, *p* = .99. 
+
+| Table 1              |         |       |
+|----------------------|---------|-------|
+| *Pet Variables* (*N* = 47)     |Univariate Statistics|
+| Variable             | *M*     | *SD*  |
+| Dogs as Pets         | 4.72    | 5.32  |
+| Other Pets           | 4.55    | 6.86  |
+
+
+| Table 2              |       |       |  
+|----------------------|-------|-------|
+| *Haircut Statistics*(*N* = 47)  |
+| Levels               | *n*   | % |
+| Agree                | 17    | 36|
+| Neutral              | 7     | 15|
+| Disagree             | 23    | 48|
+
+| Table 3                 |       |       |
+|-------------------------|-------|-------|
+| Correlation and weights |       |       |
+| Variable                | *r*   |    B  | 
+| Others                  | .44*  |  .42* |
+| Dogs                    | .36*  | .33*  | 
+*p< .05

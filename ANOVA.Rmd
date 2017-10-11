@@ -1,0 +1,109 @@
+---
+title: "Anova"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#### Between groups {#anchor}  
+**Application** : Comparing means of a quantitative variable obtained from two independent groups.  
+**Research Hypothesis** : The researcher hypothesized that students who eat salty food exercise more than their sweet and savory counterparts.  
+**Null Research Hypothesis** : There is no difference in the reported amounts of exercise for salty, savory, and sweet people.  
+
+**First load packages and library**  
+> point and click on the folder under the Environment Tab
+```{r echo = FALSE}
+class <- read.csv("C:/Users/Branly Mclanbry/Dropbox/Psych 242 ADD Health Codebook/Fall 2017/R/example.csv",  na.strings="999")
+```
+**Install packages if you have not installed them**
+```{r eval = FALSE}
+install.packages(c("tidyverse", "lsr", "multcomp"))
+```
+**Load them**
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lsr)
+library(multcomp)
+```
+
+Factor levels for `flavor` because '1' flavor does not make sense. Recode variables into a new variable instead of overwriting the original codes.
+Now codes like '1' are salty while '2' is sweet.
+```{r}
+class$flavortown[class$Flavor==1] <- "salty"
+class$flavortown[class$Flavor==2] <- "sweet"
+class$flavortown[class$Flavor==3] <- "savory"
+```
+Alternatively, another `recode_factor` function comes from the `tidyverse` package and expedites the factoring process. 
+```{r}
+class$flavortown <- recode_factor(class$Flavor, `1` = "salty", `2` = "sweet", `3` = "savory")
+```
+**Analysis**  
+Next is the creation of the actual model with `flavor` against `exercise` and the data is from the `class` datafile.  
+```{r}
+flavorlandaov <- aov(exercise~flavortown, data = class)
+```
+**Results**  
+We want to find the results of the analysis of variance.  
+```{r}
+summary(flavorlandaov)
+```
+Our analysis has revead that the *p*-value is .03 which generally means that there is a 3% chance of a Type 2 error.   
+  
+**Tukey tests**  
+Now that we know there are a difference between the groups of `flavor`, we have to find out which groups actually excercise more. a *Tukey* test is an analysis that provides a more in-depth look at the differences between the means while dictating which relations are statistically significant or not.  
+The `glht` function comes from the `multcomp` package. This is a general linear hypothesis test.  
+**Analysis**
+```{r}
+tukey <- glht(flavorlandaov,linfct=mcp(flavortown = "Tukey"))
+```
+**Results**
+```{r}
+summary(tukey)
+```
+We can look at the *p*-values which tells us that there is a difference between reported exercise amounts of the `sweet-salty` and the `savory-salt` relationship.  
+  
+**Information for write up**  
+We will need some more information for the write up, specifically the sample size, means, standard deviations and effect size.  
+**Means and Standard Deviation**  
+This can be done with the `tapply` function. The command requests that the `sd` or `mean` function be applied to `class$exercise` and `class$flavor`.
+```{r}
+tapply(class$exercise,class$flavortown, sd)
+tapply(class$exercise,class$flavortown, mean)
+```
+**Sample size**   
+Then we will need to know the sample size per group. This will be accomplished with the `table` function.
+```{r}
+table(class$flavortown)
+```
+**Effect size**   
+Effect sizes can be found from the `lsr` package utilizing the `etaSquared` function.
+```{r}
+etaSquared(flavorlandaov)
+```
+**Write up**  
+There is a difference between flavor preference and reported exercise hours, *F*(2,38) = 3.73, *p* < .05, partial n^2^ = .16. salty (*M* = 18.00, *SD* = 16.10) excercised more than their Sweet (*M* = 7.28, *SD* = 5.33), *p* < .05 and savory (*M* = 7.37, *SD* = 6.82), *p* < .05 counterparts. No differences were found between the sweet and savory parts, *p* = .99. 
+
+
+
+| Table 1          |       |       |       |
+|--------------------|-------|-------|-------|
+| *Summary Statistics* |       |       |       |
+| Variable           | *M*     | *SD*    | n     |
+| Salty              | 18.00 | 16.10 | 4     |
+| Sweet              | 7.28  | 5.33  | 18.00 |
+| Savory             | 7.37  | 6.81  | 19.00 |
+
+
+**Plots**  
+Usually information can be provided with plots which can easy cognitive loads by visually presenting information.  
+This is done with the `barplot` function.  
+First a model of what you want to plot has to be created. I named my model `saltyfitness`.
+```{r}
+saltyfitness <- tapply(class$exercise,class$flavortown, mean)
+```
+Then `saltyfitness` can be wrapped with a barplot. Further parameters can be added, such as `xlab` which is a label for the axis or `ylab` which is the y axis label. Things like color or border can be added as well.
+```{r}
+barplot(saltyfitness, xlab = "Flavor", ylab = "reported hours exercising", col = c("maroon1","springgreen1","yellow"),border = "navyblue" )
+```
+
